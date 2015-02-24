@@ -231,7 +231,6 @@ class MulticastOutput(Output):
                 self.remainder = packet 
                 break
             else:
-                assert packet.startswith(b'G')
                 yield packet
     def _write(self, data):
         socket = self.socket
