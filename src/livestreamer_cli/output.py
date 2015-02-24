@@ -189,13 +189,35 @@ class MulticastOutput(Output):
     remainder = b''
     def __init__(self, url, filename=None, fd=None):
         self.url = url 
-        parsed = self.parsed_url
-        self.address = (parsed.hostname, int(parsed.port or 8000))
-        self.interface_ip = parsed.fragment
-    @property
-    def parsed_url(self):
-        import urlparse
-        return urlparse.urlparse(self.url)
+        import socket
+        if not url.startswith('udp://'):
+            raise ValueError('Require a udp:// format URL for multicast: %s'%(url,))
+        host, port, local = '', '', ''
+        url = url[6:]
+        if url.startswith('['):
+            # IPv6 address...
+            host = url[:url.index(']')]
+            url = url[len(host):]
+            if not url.startswith(':'):
+                raise ValueError('Require a url with port')
+            port = url[1:]
+            self.family = socket.AF_INET6
+        else:
+            if not ':' in url:
+                # default port, *may* have #
+                if '#' in url:
+                    host, local = url.split('#',1)
+                else:
+                    host = url
+            else:
+                host, port = url.split(':', 1)
+            self.family = socket.AF_INET
+        if '#' in port:
+            port, local = port.split('#',1)
+        port = int(port or '8000', 10)
+        sys.stderr.write('Output: group=%s port=%s local=%s\n'%(host, port, local))
+        self.address = (host, port)
+        self.interface_ip = local
     def _open(self):
         from zeroconf import mcastsocket
         self.socket = mcastsocket.create_socket(
