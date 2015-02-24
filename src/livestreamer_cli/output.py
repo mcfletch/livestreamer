@@ -172,4 +172,75 @@ class PlayerOutput(Output):
         else:
             self.player.stdin.write(data)
 
-__all__ = ["PlayerOutput", "FileOutput"]
+class MulticastOutput(Output):
+    """Output to (Multicast) UDP TS stream
+    
+    This isn't likely to be widely useful, so I'm not actually 
+    making the code particularly reusable or self-contained.
+    I'm using the multicast setup code from:
+    
+        github.com/mcfletch/pyzeroconf
+        
+    so *iff* you use this output then you wind up using LGPL 
+    code in your app. (The code is only loaded if you actually 
+    invoke the multicast option).
+    """
+    socket = None
+    remainder = b''
+    def __init__(self, url, filename=None, fd=None):
+        self.url = url 
+        parsed = self.parsed_url
+        self.address = (parsed.hostname, int(parsed.port or 8000))
+        self.interface_ip = parsed.fragment
+    @property
+    def parsed_url(self):
+        import urlparse
+        return urlparse.urlparse(self.url)
+    def _open(self):
+        from zeroconf import mcastsocket
+        self.socket = mcastsocket.create_socket(
+            self.address, 
+            loop=False,
+        )
+        mcastsocket.join_group(self.socket, self.address[0], iface=self.interface_ip)
+    def _close(self):
+        if self.socket:
+            # Should be critical section..
+            socket = self.socket
+            self.socket = None
+            from zeroconf import mcastsocket
+            try:
+                mcastsocket.leave_group(
+                    socket, self.address[0], iface=self.interface_ip
+                )
+            except Exception:
+                pass 
+            socket.close()
+    def iterdata(self, data, size=188):
+        # MPEG TS packets of 188 bytes
+        offset = len(self.remainder)
+        if offset:
+            # we can *still* wind up with a 
+            # short packet here
+            yield self.remainder + data[:size-offset]
+            self.remainder = b''
+            offset = size-offset
+        for i in range(offset, len(data)+1, size):
+            packet = data[i:i+size]
+            if len(packet) != size:
+                self.remainder = packet 
+                break
+            else:
+                assert packet.startswith(b'G')
+                yield packet
+    def _write(self, data):
+        import sys
+        sys.stderr.write('writing %sPackets\n'%(len(data)/188.))
+        socket = self.socket
+        address = self.address
+        for packet in self.iterdata(data):
+            
+            socket.sendto(packet, 0, address)
+        
+
+__all__ = ["PlayerOutput", "FileOutput", "MulticastOutput"]

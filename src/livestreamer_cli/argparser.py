@@ -440,6 +440,21 @@ output.add_argument(
     Write stream data to stdout instead of playing it.
     """
 )
+output.add_argument(
+    "--multicast", 
+    metavar="udp://GROUP:PORT#LOCALIP", 
+    help="""
+    Output a multicast UDP MPEG TS stream (only compatible with MPEG TS sources),
+    
+    if #LOCALIP is provided, then Multicast is restricted to that interface,
+    otherwise default multicast routing is used. You can start VLC with the 
+    url:
+    
+        udp://@224.1.1.2:8000
+    
+    to view the multicast streams produced.
+    """,
+)
 
 stream = parser.add_argument_group("Stream options")
 stream.add_argument(

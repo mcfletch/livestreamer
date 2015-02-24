@@ -20,7 +20,7 @@ from .argparser import parser
 from .compat import stdout, is_win32
 from .console import ConsoleOutput
 from .constants import CONFIG_FILES, PLUGINS_DIR, STREAM_SYNONYMS
-from .output import FileOutput, PlayerOutput
+from .output import FileOutput, PlayerOutput, MulticastOutput
 from .utils import NamedPipe, HTTPServer, ignored, progress, stream_to_url
 
 ACCEPTABLE_ERRNO = (errno.EPIPE, errno.EINVAL, errno.ECONNRESET)
@@ -56,7 +56,9 @@ def create_output():
 
     """
 
-    if args.output:
+    if args.multicast:
+        out = MulticastOutput(args.multicast)
+    elif args.output:
         if args.output == "-":
             out = FileOutput(fd=stdout)
         else:
