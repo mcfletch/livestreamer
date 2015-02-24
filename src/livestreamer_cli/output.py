@@ -196,12 +196,14 @@ class MulticastOutput(Output):
         url = url[6:]
         if url.startswith('['):
             # IPv6 address...
-            host = url[:url.index(']')]
+            host = url[:url.index(']')+1]
             url = url[len(host):]
             if not url.startswith(':'):
                 raise ValueError('Require a url with port')
             port = url[1:]
             self.family = socket.AF_INET6
+            host = host.lstrip('[')
+            host = host.rstrip(']')
         else:
             if not ':' in url:
                 # default port, *may* have #
@@ -214,6 +216,8 @@ class MulticastOutput(Output):
             self.family = socket.AF_INET
         if '#' in port:
             port, local = port.split('#',1)
+            local = local.lstrip('[')
+            local =local.rstrip(']')
         port = int(port or '8000', 10)
         sys.stderr.write('Output: group=%s port=%s local=%s\n'%(host, port, local))
         self.address = (host, port)
