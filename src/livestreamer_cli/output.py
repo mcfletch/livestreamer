@@ -223,6 +223,7 @@ class MulticastOutput(Output):
         self.socket = mcastsocket.create_socket(
             (self.interface_ip or self.address[0], self.address[1]), 
             loop=True,
+            family=self.family, 
         )
         mcastsocket.join_group(self.socket, self.address[0], iface=self.interface_ip)
     def _close(self):
