@@ -234,12 +234,9 @@ class MulticastOutput(Output):
                 assert packet.startswith(b'G')
                 yield packet
     def _write(self, data):
-        import sys
-        sys.stderr.write('writing %sPackets\n'%(len(data)/188.))
         socket = self.socket
         address = self.address
         for packet in self.iterdata(data):
-            
             socket.sendto(packet, 0, address)
         
 
