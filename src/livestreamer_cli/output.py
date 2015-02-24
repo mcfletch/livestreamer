@@ -199,8 +199,8 @@ class MulticastOutput(Output):
     def _open(self):
         from zeroconf import mcastsocket
         self.socket = mcastsocket.create_socket(
-            self.address, 
-            loop=False,
+            (self.interface_ip or self.address[0], self.address[1]), 
+            loop=True,
         )
         mcastsocket.join_group(self.socket, self.address[0], iface=self.interface_ip)
     def _close(self):
